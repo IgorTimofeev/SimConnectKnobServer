@@ -1,0 +1,34 @@
+﻿<Window
+	x:Class="MSFSSDKTest.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:local="clr-namespace:MSFSSDKTest"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+   
+	Title="MainWindow"
+	Width="800"
+	Height="450"
+>
+    <Grid>
+		<StackPanel
+			Width="400"
+			VerticalAlignment="Center"
+		>
+			<TextBox
+				x:Name="AltitudeTextBox"
+				TextWrapping="Wrap"
+				Height="300"
+			>
+				
+			</TextBox>
+			
+			<Button
+				Click="Button_Click"
+			>
+				Govno
+			</Button>
+		</StackPanel>
+    </Grid>
+</Window>

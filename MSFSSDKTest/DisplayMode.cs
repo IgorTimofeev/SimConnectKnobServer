@@ -23,6 +23,8 @@ public abstract class DisplayMode {
 
 	public abstract void FromRotation(long time, bool right);
 	public abstract void SendSimEvent(Sim sim);
+
+	public virtual string BodyToString() => Body.Value.ToString()!;
 }
 
 
@@ -35,7 +37,7 @@ public abstract class IntDisplayMode : DisplayMode {
 	public int Minimum, Maximum;
 	public bool Cycling;
 
-	public int IntValue {
+	public virtual int IntValue {
 		get => (int) Body.Value;
 		set {
 			if (value < Minimum) {
@@ -62,8 +64,24 @@ public abstract class IntDisplayMode : DisplayMode {
 	}
 }
 
+
+public abstract class BoolDisplayMode : DisplayMode {
+	public BoolDisplayMode(string title) : base(title, "", "false") {
+
+	}
+
+	public bool BoolValue {
+		get => (bool) Body.Value;
+		set => Body.Value = value;
+	}
+
+	public override void FromRotation(long time, bool right) {
+		BoolValue = !BoolValue;
+	}
+}
+
 public abstract class PercentDisplayMode : IntDisplayMode {
-	public PercentDisplayMode(string title) : base(title, "%", 0, 100) {
+	public PercentDisplayMode(string title, int minimum = 0, int maximum = 100) : base(title, "%", minimum, maximum) {
 
 	}
 
@@ -74,6 +92,16 @@ public abstract class PercentDisplayMode : IntDisplayMode {
 		else {
 			SnapValue(right);
 		}
+	}
+}
+
+public class ElevatorTrimDisplayMode : PercentDisplayMode {
+	public ElevatorTrimDisplayMode() : base("EL TRIM", -100, 100) {
+
+	}
+
+	public override void SendSimEvent(Sim sim) {
+		sim.SendTrimEvent(IntValue);
 	}
 }
 
@@ -150,17 +178,62 @@ public class VerticalSpeedDisplayMode : IntDisplayMode {
 
 	}
 
+	public override void FromRotation(long time, bool right) {
+		SnapValue(100, right);
+	}
+
 	public override void SendSimEvent(Sim sim) {
 		sim.SendVerticalSpeedEvent(IntValue);
 	}
 }
 
-public class TrimDisplayMode : IntDisplayMode {
-	public TrimDisplayMode() : base("Trim", "deg", -90, 90) {
+public class AutopilotDisplayMode : BoolDisplayMode {
+	public AutopilotDisplayMode() : base("A/P") {
 
 	}
 
 	public override void SendSimEvent(Sim sim) {
-		sim.SendTrimEvent(IntValue);
+		sim.SendAutopilotMasterEvent(BoolValue);
+	}
+}
+
+public class ParkingBreaksDisplayMode : BoolDisplayMode {
+	public ParkingBreaksDisplayMode() : base("PRK BRK") {
+
+	}
+
+	public override void SendSimEvent(Sim sim) {
+		sim.SendParkingBrakeEvent(BoolValue);
+	}
+}
+
+
+public class APFLCDisplayMode : BoolDisplayMode {
+	public APFLCDisplayMode() : base("FLC") {
+
+	}
+
+	public override void SendSimEvent(Sim sim) {
+		sim.SendAPFLCEvent(BoolValue);
+	}
+}
+
+public class APVSHoldDisplayMode : BoolDisplayMode {
+	public APVSHoldDisplayMode() : base("V/S HOLD") {
+
+	}
+
+	public override void SendSimEvent(Sim sim) {
+		sim.SendAPVSHoldEvent(BoolValue);
+	}
+}
+
+public class APHDGHoldDisplayMode : BoolDisplayMode {
+	public APHDGHoldDisplayMode() : base("HDG HOLD") {
+
+	}
+
+	public override void SendSimEvent(Sim sim) {
+		sim.SendAPHDGHoldEvent(BoolValue);
 	}
 }

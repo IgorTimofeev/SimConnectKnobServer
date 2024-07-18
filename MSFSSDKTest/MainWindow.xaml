@@ -17,18 +17,12 @@
 			VerticalAlignment="Center"
 		>
 			<TextBox
-				x:Name="AltitudeTextBox"
+				x:Name="GovnoTextBox"
 				TextWrapping="Wrap"
 				Height="300"
 			>
 				
 			</TextBox>
-			
-			<Button
-				Click="Button_Click"
-			>
-				Govno
-			</Button>
 		</StackPanel>
     </Grid>
 </Window>

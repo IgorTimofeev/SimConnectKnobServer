@@ -9,11 +9,20 @@ namespace MSFSSDKTest;
 public struct SimData {
 	public double Throttle;
 	public double Mixture;
-	public double Speed;
-	public double Heading;
-	public double Altitude;
-	public double VerticalSpeed;
-	public double Trim;
+
+	public int ElevatorTrim;
+
+	public int ParkingBreak;
+
+	public int APMaster;
+	public int APHDGHold;
+	public int APFLC;
+	public int APVSHold;
+
+	public double APSpeed;
+	public double APHeading;
+	public double APAltitude;
+	public double APVerticalSpeed;
 }
 
 public enum SimDataRequest {
@@ -31,7 +40,17 @@ public enum SimEvent {
 	HEADING_BUG_SET,
 	AP_ALT_VAR_SET_ENGLISH,
 	AP_VS_VAR_SET_ENGLISH,
-	ELEVATOR_TRIM_SET
+	ELEVATOR_TRIM_SET,
+	PARKING_BRAKE_SET,
+	AP_MASTER,
+	AILERON_SET,
+	ELEVATOR_SET,
+	FLIGHT_LEVEL_CHANGE_ON,
+	FLIGHT_LEVEL_CHANGE_OFF,
+	AP_HDG_HOLD_ON,
+	AP_HDG_HOLD_OFF,
+	AP_PANEL_VS_ON,
+	AP_PANEL_VS_OFF
 }
 
 public enum SimNotificationGroup {
@@ -87,18 +106,27 @@ public class Sim {
 
 			MainWindow.ThrottleMode.Body.Value = (int) Math.Round(simData.Throttle);
 			MainWindow.MixtureMode.Body.Value = (int) Math.Round(simData.Mixture);
-			MainWindow.SpeedMode.Body.Value = (int) Math.Round(simData.Speed);
-			MainWindow.HeadingMode.Body.Value = (int) Math.Round(simData.Heading);
-			MainWindow.AltitudeMode.Body.Value = (int) Math.Round(simData.Altitude);
-			MainWindow.VerticalSpeedMode.Body.Value = (int) Math.Round(simData.VerticalSpeed * 60);
-			MainWindow.TrimMode.Body.Value = (int) Math.Round(simData.Trim);
+
+			MainWindow.ElevatorTrimMode.Body.Value = (int) Math.Round(simData.ElevatorTrim / 16384f * 100f);
+
+			MainWindow.ParkingBreakMode.Body.Value = simData.ParkingBreak == 1;
+
+			MainWindow.APMode.Body.Value = simData.APMaster == 1;
+			MainWindow.APHDGHoldMode.Body.Value = simData.APHDGHold == 1;
+			MainWindow.APFLCMode.Body.Value = simData.APFLC == 1;
+			MainWindow.APVSHoldMode.Body.Value = simData.APVSHold == 1;
+
+			MainWindow.APSPDMode.Body.Value = (int) Math.Round(simData.APSpeed);
+			MainWindow.APHDGMode.Body.Value = (int) Math.Round(simData.APHeading);
+			MainWindow.APALTMode.Body.Value = (int) Math.Round(simData.APAltitude);
+			MainWindow.APVSMode.Body.Value = (int) Math.Round(simData.APVerticalSpeed * 60);
 
 			MainWindow.SerialWriteModeValueChecked();
 
-			MainWindow.AltitudeTextBox.Clear();
+			MainWindow.GovnoTextBox.Clear();
 
 			foreach (var mode in DisplayMode.Instances)
-				MainWindow.AltitudeTextBox.AppendText($"{mode.Title.Value}: {mode.Body.Value} {mode.Suffix.Value}\n");
+				MainWindow.GovnoTextBox.AppendText($"{mode.Title.Value}: {mode.Body.Value} {mode.Suffix.Value}\n");
 		}
 		else {
 			//label_status.Text = "Unknown request ID: " + ((uint) data.dwRequestID);
@@ -127,12 +155,21 @@ public class Sim {
 
 			SimConnect.AddToDataDefinition(SimDefinition.SimData, "GENERAL ENG THROTTLE LEVER POSITION:1", "percent", SIMCONNECT_DATATYPE.FLOAT64, 0.0f, SimConnect.SIMCONNECT_UNUSED);
 			SimConnect.AddToDataDefinition(SimDefinition.SimData, "GENERAL ENG MIXTURE LEVER POSITION:1", "percent", SIMCONNECT_DATATYPE.FLOAT64, 0.0f, SimConnect.SIMCONNECT_UNUSED);
+
+			SimConnect.AddToDataDefinition(SimDefinition.SimData, "ELEVATOR TRIM INDICATOR", "position 16K", SIMCONNECT_DATATYPE.INT32, 0.0f, SimConnect.SIMCONNECT_UNUSED);
+
+			SimConnect.AddToDataDefinition(SimDefinition.SimData, "BRAKE PARKING POSITION", "bool", SIMCONNECT_DATATYPE.INT32, 0.0f, SimConnect.SIMCONNECT_UNUSED);
+
+			SimConnect.AddToDataDefinition(SimDefinition.SimData, "AUTOPILOT MASTER", "bool", SIMCONNECT_DATATYPE.INT32, 0.0f, SimConnect.SIMCONNECT_UNUSED);
+			SimConnect.AddToDataDefinition(SimDefinition.SimData, "AUTOPILOT HEADING LOCK", "bool", SIMCONNECT_DATATYPE.INT32, 0.0f, SimConnect.SIMCONNECT_UNUSED);
+			SimConnect.AddToDataDefinition(SimDefinition.SimData, "AUTOPILOT FLIGHT LEVEL CHANGE", "bool", SIMCONNECT_DATATYPE.INT32, 0.0f, SimConnect.SIMCONNECT_UNUSED);
+			SimConnect.AddToDataDefinition(SimDefinition.SimData, "AUTOPILOT VERTICAL HOLD", "bool", SIMCONNECT_DATATYPE.INT32, 0.0f, SimConnect.SIMCONNECT_UNUSED);
+
 			SimConnect.AddToDataDefinition(SimDefinition.SimData, "AUTOPILOT AIRSPEED HOLD VAR", "knots", SIMCONNECT_DATATYPE.FLOAT64, 0.0f, SimConnect.SIMCONNECT_UNUSED);
 			SimConnect.AddToDataDefinition(SimDefinition.SimData, "AUTOPILOT HEADING LOCK DIR", "degrees", SIMCONNECT_DATATYPE.FLOAT64, 0.0f, SimConnect.SIMCONNECT_UNUSED);
 			SimConnect.AddToDataDefinition(SimDefinition.SimData, "AUTOPILOT ALTITUDE LOCK VAR", "feet", SIMCONNECT_DATATYPE.FLOAT64, 0.0f, SimConnect.SIMCONNECT_UNUSED);
 			SimConnect.AddToDataDefinition(SimDefinition.SimData, "AUTOPILOT VERTICAL HOLD VAR", "feet", SIMCONNECT_DATATYPE.FLOAT64, 0.0f, SimConnect.SIMCONNECT_UNUSED);
-			SimConnect.AddToDataDefinition(SimDefinition.SimData, "ELEVATOR TRIM POSITION", "degrees", SIMCONNECT_DATATYPE.FLOAT64, 0.0f, SimConnect.SIMCONNECT_UNUSED);
-
+				
 			SimConnect.RegisterDataDefineStruct<SimData>(SimDefinition.SimData);
 
 			SimConnectTimer.Start();
@@ -155,6 +192,10 @@ public class Sim {
 	public void TransmitEvent(Enum eventID, uint value) {
 		SimConnect!.MapClientEventToSimEvent(eventID, eventID.ToString());
 		SimConnect.TransmitClientEvent(0U, eventID, value, SimNotificationGroup.Group0, SIMCONNECT_EVENT_FLAG.GROUPID_IS_PRIORITY);
+	}
+
+	public void TransmitEvent(Enum eventID) {
+		TransmitEvent(eventID, 0);
 	}
 
 	public void TransmitEventEX1(Enum eventID, uint value) {
@@ -186,9 +227,41 @@ public class Sim {
 		TransmitEventEX1(SimEvent.AP_VS_VAR_SET_ENGLISH, (uint) value);
 	}
 
-	public void SendTrimEvent(int value) {
-		var pizda = value / 90f * (value > 0 ? 16384f : 16383f);
+	public void SendTrimEvent(int percent) {
+		var pizda = percent / 100f * (percent > 0 ? 16384f : 16383f);
 
-		TransmitEventEX1(SimEvent.AP_VS_VAR_SET_ENGLISH, (uint) pizda);
+		TransmitEvent(SimEvent.ELEVATOR_TRIM_SET, (uint) pizda);
+	}
+
+	public void SendParkingBrakeEvent(bool value) {
+		TransmitEvent(SimEvent.PARKING_BRAKE_SET, (uint) (value ? 1 : 0));
+	}
+
+	public void SendAPFLCEvent(bool value) {
+		TransmitEvent(value ? SimEvent.FLIGHT_LEVEL_CHANGE_ON : SimEvent.FLIGHT_LEVEL_CHANGE_OFF);
+	}
+
+	public void SendAPHDGHoldEvent(bool value) {
+		TransmitEvent(value ? SimEvent.AP_HDG_HOLD_ON : SimEvent.AP_HDG_HOLD_OFF);
+	}
+
+	public void SendAPVSHoldEvent(bool value) {
+		TransmitEvent(value ? SimEvent.AP_PANEL_VS_ON : SimEvent.AP_PANEL_VS_OFF);
+	}
+
+	public void SendAutopilotMasterEvent(bool value) {
+		TransmitEvent(SimEvent.AP_MASTER, (uint) (value ? 1 : 0));
+	}
+
+	public void SendAileronEvent(int percent) {
+		var pizda = percent / 100f * (percent > 0 ? 16384f : 16383f);
+
+		TransmitEvent(SimEvent.AILERON_SET, (uint) pizda);
+	}
+
+	public void SendElevatorEvent(int percent) {
+		var pizda = percent / 100f * (percent > 0 ? 16384f : 16383f);
+
+		TransmitEvent(SimEvent.ELEVATOR_SET, (uint) pizda);
 	}
 }

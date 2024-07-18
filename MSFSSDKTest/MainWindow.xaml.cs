@@ -61,15 +61,23 @@ public partial class MainWindow : Window {
 
 	public ThrottleDisplayMode ThrottleMode = DisplayMode.Register(new ThrottleDisplayMode());
 	public MixtureDisplayMode MixtureMode = DisplayMode.Register(new MixtureDisplayMode());
-	public SpeedDisplayMode SpeedMode = DisplayMode.Register(new SpeedDisplayMode());
-	public HeadingDisplayMode HeadingMode = DisplayMode.Register(new HeadingDisplayMode());
-	public AltitudeDisplayMode AltitudeMode = DisplayMode.Register(new AltitudeDisplayMode());
-	public VerticalSpeedDisplayMode VerticalSpeedMode = DisplayMode.Register(new VerticalSpeedDisplayMode());
-	public TrimDisplayMode TrimMode = DisplayMode.Register(new TrimDisplayMode());
 
+	public ElevatorTrimDisplayMode ElevatorTrimMode = DisplayMode.Register(new ElevatorTrimDisplayMode());
+
+	public ParkingBreaksDisplayMode ParkingBreakMode = DisplayMode.Register(new ParkingBreaksDisplayMode());
+
+	public AutopilotDisplayMode APMode = DisplayMode.Register(new AutopilotDisplayMode());
+	public APFLCDisplayMode APFLCMode = DisplayMode.Register(new APFLCDisplayMode());
+	public APHDGHoldDisplayMode APHDGHoldMode = DisplayMode.Register(new APHDGHoldDisplayMode());
+	public APVSHoldDisplayMode APVSHoldMode = DisplayMode.Register(new APVSHoldDisplayMode());
+
+	public SpeedDisplayMode APSPDMode = DisplayMode.Register(new SpeedDisplayMode());
+	public HeadingDisplayMode APHDGMode = DisplayMode.Register(new HeadingDisplayMode());
+	public AltitudeDisplayMode APALTMode = DisplayMode.Register(new AltitudeDisplayMode());
+	public VerticalSpeedDisplayMode APVSMode = DisplayMode.Register(new VerticalSpeedDisplayMode());
+	
 	public SerialVar<int> ModeIndex = new(0);
 	public SerialVar<bool> ModeMode = new(false);
-
 
 	// ------------------------------- Serial -------------------------------
 
@@ -91,7 +99,7 @@ public partial class MainWindow : Window {
 			(byte) '\n',
 
 			(byte) SerialCommand.Body,
-			..Encoding.ASCII.GetBytes(mode.Body.Value.ToString()!),
+			..Encoding.ASCII.GetBytes(mode.BodyToString()),
 			(byte) '\n',
 
 			(byte) SerialCommand.Suffix,
@@ -123,20 +131,30 @@ public partial class MainWindow : Window {
 	public void SerialWriteModeValueChecked() {
 		var mode = DisplayMode.Instances[ModeIndex.Value];
 
-		if (!mode.Body.Changed)
-			return;
+		if (mode.Body.Changed) {
+			byte[] buffer = [
+				(byte) SerialCommand.Body,
+				..Encoding.ASCII.GetBytes(mode.BodyToString()),
+				(byte) '\n',
+			];
 
-		byte[] buffer = [
-			(byte) SerialCommand.Body,
-			..Encoding.ASCII.GetBytes(mode.Body.Value.ToString()!),
-			(byte) '\n',
-		];
+			Serial.Write(buffer, 0, buffer.Length);
 
-		Serial.Write(buffer, 0, buffer.Length);
+			mode.Body.Changed = false;
+		}
 
-		mode.Body.Changed = false;
+		if (mode.Suffix.Changed) {
+			byte[] buffer = [
+				(byte) SerialCommand.Suffix,
+				..Encoding.ASCII.GetBytes(mode.Suffix.Value),
+				(byte) '\n',
+			];
+
+			Serial.Write(buffer, 0, buffer.Length);
+
+			mode.Body.Changed = false;
+		}
 	}
-
 
 	public void OnSerialDataReceived(object s, SerialDataReceivedEventArgs e) {
 		try {
@@ -196,9 +214,5 @@ public partial class MainWindow : Window {
 	}
 
 	void StopSerial() {
-	}
-
-	void Button_Click(object s, RoutedEventArgs e) {
-		
 	}
 }
